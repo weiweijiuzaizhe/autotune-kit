@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "autotune-kit"
+version = "0.1.0"
+description = "AutoTune Kit: minimal ATK CLI wrapper for LLaMA-Factory finetuning runs"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "PyYAML>=6.0"
+]
+
+[project.scripts]
+atk = "atk.cli:main"
+
+[tool.setuptools]
+packages = ["atk"]
