@@ -55,6 +55,8 @@ train:
 
 ATK 会调用 `llamafactory-cli train` 完成训练，因此运行前需要准备训练栈依赖（示例）：
 
+常见模型/训练栈：Qwen / DeepSeek + bitsandbytes + PEFT（由 LLaMA-Factory 调度）。
+
 ```bash
 pip install -U "transformers>=4.40" accelerate datasets peft bitsandbytes sentencepiece
 pip install llamafactory
