@@ -1,4 +1,37 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
 
+[project]
+name = "autotune-kit"
+version = "0.1.0"
+description = "ATK: single-GPU finetuning safe-launch + sanity report CLI"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "PyYAML>=6.0"
+]
+
+[project.optional-dependencies]
+runtime = [
+  "transformers>=4.40",
+  "accelerate",
+  "datasets",
+  "peft",
+  "sentencepiece",
+  "llamafactory",
+  "bitsandbytes; platform_system=='Linux' and platform_machine=='x86_64'",
+]
+# torch wheels with CUDA build usually require an extra index URL (see README).
+cu126 = [
+  "torch==2.7.0+cu126; platform_system=='Linux' and platform_machine=='x86_64'"
+]
+
+[project.scripts]
+atk = "atk.cli:main"
+
+[tool.setuptools]
+packages = ["atk"]
 
 [tool.setuptools.package-data]
 atk = ["templates/*.yaml"]

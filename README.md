@@ -25,10 +25,25 @@ train:
   micro_batch: 1
 ```
 
-## 📦 Quickstart（更像产品的安装方式）
+## 📦 Quickstart（GitHub 直接 pip 安装）
+
+GPU 裸机一条命令（CUDA 12.6 / cu126）：
 
 ```bash
-pip install git+https://github.com/weiweijiuzaizhe/autotune-kit.git
+python3 -m pip install -U pip \
+  && python3 -m pip install --extra-index-url https://download.pytorch.org/whl/cu126 \
+    "autotune-kit[runtime,cu126] @ git+https://github.com/weiweijiuzaizhe/autotune-kit.git"
+
+atk run --config examples/atk.yaml
+```
+
+如果你已经提前装好了 torch（或不想让 pip 自动处理 torch），用更轻的方式：
+
+```bash
+python3 -m pip install -U pip \
+  && python3 -m pip install \
+    "autotune-kit[runtime] @ git+https://github.com/weiweijiuzaizhe/autotune-kit.git"
+
 atk run --config examples/atk.yaml
 ```
 
