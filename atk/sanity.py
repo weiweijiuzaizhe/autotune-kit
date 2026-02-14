@@ -3,10 +3,6 @@ import re
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
-from peft import PeftModel
-
 from atk.utils import save_json
 
 
@@ -30,6 +26,8 @@ def _build_input(tok, prompt: str) -> str:
 
 
 def _gen_one(model, tok, prompt: str) -> str:
+    import torch
+
     text = _build_input(tok, prompt)
     inputs = tok(text, return_tensors="pt")
     device = next(model.parameters()).device
@@ -41,7 +39,7 @@ def _gen_one(model, tok, prompt: str) -> str:
             do_sample=False,
             pad_token_id=tok.eos_token_id,
         )
-    gen = out[0][inputs["input_ids"].shape[1]:]
+    gen = out[0][inputs["input_ids"].shape[1] :]
     return tok.decode(gen, skip_special_tokens=True).strip()
 
 
@@ -67,6 +65,11 @@ def _eval_model(model, tok, format_prompts: List[str], qa_items: List[Tuple[str,
 
 
 def run_sanity(*, run_dir: Path, model_base: str, adapter_dir: Path, qlora_4bit: bool) -> Dict:
+    # Lazy imports: allow `pip install autotune-kit` and `atk --help` on machines without torch.
+    import torch
+    from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
+    from peft import PeftModel
+
     format_prompts = [
         "输出严格JSON: name=Alice age=23 city=Beijing",
         "请只返回JSON，信息是 Bob, 31, Shanghai",
@@ -116,7 +119,8 @@ def run_sanity(*, run_dir: Path, model_base: str, adapter_dir: Path, qlora_4bit:
     base_res = _eval_model(base_model, tok, format_prompts, qa_items)
 
     del base_model
-    torch.cuda.empty_cache()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
 
     tuned_base = AutoModelForCausalLM.from_pretrained(
         model_base,
