@@ -27,26 +27,20 @@ train:
 
 ## 📦 Quickstart（GitHub 直接 pip 安装）
 
-GPU 裸机一条命令（CUDA 12.6 / cu126）：
+一条命令（推荐，用户不用手写 `--extra-index-url`）：
 
 ```bash
 python3 -m pip install -U pip \
-  && python3 -m pip install --extra-index-url https://download.pytorch.org/whl/cu126 \
-    "autotune-kit[runtime,cu126] @ git+https://github.com/weiweijiuzaizhe/autotune-kit.git"
-
-atk run --config examples/atk.yaml
+  && python3 -m pip install git+https://github.com/weiweijiuzaizhe/autotune-kit.git \
+  && atk bootstrap --cuda cu126 \
+  && atk run --config examples/atk.yaml
 ```
 
-如果你已经提前装好了 torch（或不想让 pip 自动处理 torch），用更轻的方式：
+如果你已经装好了训练栈，也可以直接运行：
 
 ```bash
-python3 -m pip install -U pip \
-  && python3 -m pip install \
-    "autotune-kit[runtime] @ git+https://github.com/weiweijiuzaizhe/autotune-kit.git"
-
 atk run --config examples/atk.yaml
 ```
-
 默认输出目录：`./atk_runs/run_<timestamp>/`（以当前工作目录为根）。
 
 ## ⭐ 核心功能亮点
