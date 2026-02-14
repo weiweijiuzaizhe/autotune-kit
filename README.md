@@ -4,11 +4,32 @@ ATK — 单卡微调安全护盾（预跑 OOM 拦截 + 体检报告）
 
 ATK 是一个极简 CLI，用于在训练前做 Safe Launch 预跑拦截显存高风险配置，并在训练后生成 base vs tuned 的 sanity 对比与一页报告。
 
-## 📦 快速开始（3 步上手）
+Safe Launch HIGH RISK 拦截示例（节选）：
+
+```text
+## 1) Safe Launch
+- passed: False
+- risk_level: HIGH
+- planned: {'cutoff_len': 4096, 'micro_batch': 2}
+- trial_passed: True
+- exit_code: 0
+- error_keyword: HIGH_RISK
+- suggestion: Planned config is HIGH RISK. Recommended: cutoff_len=1024 and micro_batch=1.
+```
+
+推荐修改（可直接复制到配置里）：
+
+```yaml
+train:
+  cutoff_len: 1024
+  micro_batch: 1
+```
+
+## 📦 Quickstart（3 步上手）
 1. 安装
 
 ```bash
-pip install git+https://github.com/weiweijiuzaizhe/autotune-kit
+pip install git+https://github.com/weiweijiuzaizhe/autotune-kit.git
 ```
 
 2. 拷贝 `examples/atk.yaml` 并修改模型/数据路径
@@ -19,43 +40,30 @@ pip install git+https://github.com/weiweijiuzaizhe/autotune-kit
 atk run --config examples/atk.yaml
 ```
 
+默认输出目录：`./atk_runs/run_<timestamp>/`（以当前工作目录为根）。
+
 ## ⭐ 核心功能亮点
 - Safe Launch：训练前自动统计数据长度，进行 5 steps 试跑，并对明显高风险配置给出可复制修复建议
 - Sanity Delta：训练后自动生成 JSON 格式遵循率 + 简单 QA 的 base/tuned 对比与 delta
 - 面向单卡 24GB GPU（如 RTX 4090），覆盖 7B–32B 的量化微调工作流（取决于配置与数据长度）
 - 无 Web UI，仅 CLI；ATK 自身依赖极少（仅 `PyYAML`），其余依赖由训练栈提供
 
-## 📌 示例输出片段
-下面是一次 Safe Launch 高风险拦截时的报告片段（示例）：
+## 📌 示例输出
+每次运行会创建一个 `run_dir`，例如：
 
 ```text
-## 1) Safe Launch
-- passed: False
-- risk_level: HIGH
-- planned: {'cutoff_len': 4096, 'micro_batch': 2}
-- error_keyword: HIGH_RISK
-```
-
-报告会自动附带可复制的修复建议：
-
-```yaml
-train:
-  cutoff_len: 1024
-  micro_batch: 1
-```
-
-以及生成的 `atk_report.md`（每次运行生成一份）：
-
-```text
-./atk_runs/run_YYYYmmdd_HHMMSS/atk_report.md
+./atk_runs/run_YYYYmmdd_HHMMSS/
+  atk_report.md
+  lf_train.log
+  safe_launch.json
+  sanity_report.json
+  ...
 ```
 
 ## 🧠 安装说明
 推荐环境：CUDA 12 + Python 3.10。
 
 ATK 会调用 `llamafactory-cli train` 完成训练，因此运行前需要准备训练栈依赖（示例）：
-
-常见模型/训练栈：Qwen / DeepSeek + bitsandbytes + PEFT（由 LLaMA-Factory 调度）。
 
 ```bash
 pip install -U "transformers>=4.40" accelerate datasets peft bitsandbytes sentencepiece
@@ -106,12 +114,30 @@ export HF_HUB_CACHE=~/.cache/hf/hub
 - llamafactory 版本不兼容：优先用与你的 `train.yaml` 模板兼容的版本
 - 数据分布过长：先降低 `cutoff_len`，再降低 `micro_batch`；必要时移除极长样本
 
+## 🗂️ 目录结构
+```text
+.
+  LICENSE
+  README.md
+  pyproject.toml
+  examples/
+    atk.yaml
+  atk/
+    __init__.py
+    cli.py
+    config.py
+    init.py
+    report.py
+    run.py
+    safelaunch.py
+    sanity.py
+    utils.py
+    templates/
+      lf_train_template.yaml
+```
+
 ## 🤝 反馈与贡献
 欢迎提 issue、PR、star！
 
-### 贡献指南
-- 优先提交最小可复现的 bug report（包含配置、日志关键片段）
-- PR 建议包含：改动说明 + 本地验证命令 + 影响面评估
-
-### 反馈链接
-- Issues: https://github.com/weiweijiuzaizhe/autotune-kit/issues
+- 贡献指南：优先提交最小可复现的 bug report（包含配置、日志关键片段）。PR 建议包含：改动说明 + 本地验证命令 + 影响面评估。
+- 反馈链接：Issues https://github.com/weiweijiuzaizhe/autotune-kit/issues
