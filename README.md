@@ -41,6 +41,7 @@ python3 -m pip install -U pip \
 ```bash
 atk run --config examples/atk.yaml
 ```
+
 默认输出目录：`./atk_runs/run_<timestamp>/`（以当前工作目录为根）。
 
 ## ⭐ 核心功能亮点
