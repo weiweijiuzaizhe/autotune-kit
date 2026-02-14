@@ -1,9 +1,9 @@
 model:
   base: Qwen/Qwen2.5-7B-Instruct
 data:
-  train: /root/ATK_V0_1_Demo_20260214_070303/train.jsonl
+  train: ./data/train.jsonl
 output:
-  dir: /root/atk_outputs/demo1
+  dir: ./atk_outputs/demo1
 train:
   template: qwen
   cutoff_len: 1024

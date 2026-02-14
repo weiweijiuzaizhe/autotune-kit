@@ -1,22 +1,10 @@
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
-.Python
-build/
 dist/
+build/
 *.egg-info/
-.eggs/
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-
-# local runs/artifacts (do not commit)
-atk_runs/
-atk_outputs/
-*.log
-*.out
-
-# editor
-.vscode/
+.DS_Store
+.env
+venv/
 .idea/
+.vscode/

@@ -1,68 +1,115 @@
-# autotune-kit
+# ATK
 
-`autotune-kit` 是一个最小可运行的 ATK CLI 工具集，用于在单机单卡环境中调用 `llamafactory-cli train` 跑通微调闭环。
+ATK — 单卡微调安全护盾（预跑 OOM 拦截 + 体检报告）
 
-目标：闭环优先，不追求训练效果。
+ATK 是一个极简 CLI，用于在训练前做 Safe Launch 预跑拦截显存高风险配置，并在训练后生成 base vs tuned 的 sanity 对比与一页报告。
 
-## 特性 (v0.1)
-- `atk run --config <yaml>`: 一键跑通 Safe Launch + 训练 + sanity + 报告
-- Safe Launch: 自动统计 token 长度，先 5 steps 试跑；并对明显高风险配置做拦截
-- 报告: `atk_report.md`，Safe Launch 失败时提供可复制的“推荐修改”配置片段
-
-## 环境假设
-- Python 3.10
-- 已安装并可执行 `llamafactory-cli`
-- 有可用 GPU
-
-## 安装
-建议在你的 py310 环境中：
+## 📦 快速开始（3 步上手）
+1. 安装
 
 ```bash
-cd /root/autotune-kit
-pip install -U pip
-pip install -e .
+pip install git+https://github.com/weiweijiuzaizhe/autotune-kit
 ```
 
-注意：如果你使用的是 conda 环境，请确保运行的是对应环境的 `pip`/`python`。
+2. 拷贝 `examples/atk.yaml` 并修改模型/数据路径
 
-## 使用
-示例配置：`examples/atk.yaml`
+3. 运行
 
 ```bash
-atk run --config /root/autotune-kit/examples/atk.yaml
+atk run --config examples/atk.yaml
 ```
 
-重跑(读取历史 run 的有效配置 `config.effective.yaml` 再跑一遍)：
+## ⭐ 核心功能亮点
+- Safe Launch：训练前自动统计数据长度，进行 5 steps 试跑，并对明显高风险配置给出可复制修复建议
+- Sanity Delta：训练后自动生成 JSON 格式遵循率 + 简单 QA 的 base/tuned 对比与 delta
+- 面向单卡 24GB GPU（如 RTX 4090），覆盖 7B–32B 的量化微调工作流（取决于配置与数据长度）
+- 无 Web UI，仅 CLI；ATK 自身依赖极少（仅 `PyYAML`），其余依赖由训练栈提供
 
-```bash
-atk rerun /root/atk_runs/run_YYYYmmdd_HHMMSS
-```
+## 📌 示例输出片段
+下面是一次 Safe Launch 高风险拦截时的报告片段（示例）：
 
-## 输出
-每次运行会创建：`/root/atk_runs/run_<timestamp>/`，包含：
-- `config.effective.yaml`
-- `env.txt`
-- `data_stats.json`
-- `safe_launch.json`
-- `lf_train.log`
-- `sanity_report.json` (训练成功时)
-- `atk_report.md`
-
-## 目录结构
 ```text
-autotune-kit/
-  pyproject.toml
-  README.md
-  .gitignore
-  examples/
-    atk.yaml
-  atk/
-    __init__.py
-    cli.py
-    config.py
-    run.py
-    safelaunch.py
-    sanity.py
-    report.py
-    utils.py
+## 1) Safe Launch
+- passed: False
+- risk_level: HIGH
+- planned: {'cutoff_len': 4096, 'micro_batch': 2}
+- error_keyword: HIGH_RISK
 ```
+
+报告会自动附带可复制的修复建议：
+
+```yaml
+train:
+  cutoff_len: 1024
+  micro_batch: 1
+```
+
+以及生成的 `atk_report.md`（每次运行生成一份）：
+
+```text
+./atk_runs/run_YYYYmmdd_HHMMSS/atk_report.md
+```
+
+## 🧠 安装说明
+推荐环境：CUDA 12 + Python 3.10。
+
+ATK 会调用 `llamafactory-cli train` 完成训练，因此运行前需要准备训练栈依赖（示例）：
+
+```bash
+pip install -U "transformers>=4.40" accelerate datasets peft bitsandbytes sentencepiece
+pip install llamafactory
+```
+
+注意：`torch` 安装请按你的 CUDA/驱动环境选择官方推荐方式。
+
+## 🧪 演示案例
+一个最小 `examples/atk.yaml` 示例（请按实际路径修改）：
+
+```yaml
+model:
+  base: Qwen/Qwen2.5-7B-Instruct
+data:
+  train: ./data/train.jsonl
+output:
+  dir: ./atk_outputs/demo1
+train:
+  template: qwen
+  cutoff_len: 1024
+  max_steps: 50
+  micro_batch: 1
+  grad_acc: 4
+  lr: 0.0001
+  epochs: 1
+  qlora_4bit: true
+```
+
+字段说明（最小必需）：
+- `model.base`：base 模型名称或本地路径
+- `data.train`：Alpaca JSONL（包含 instruction/input/output）
+- `output.dir`：训练产物输出根目录
+- `train.*`：训练关键参数（ATK 会写入一份 LLaMA-Factory 兼容的 `train.yaml`）
+
+## 📍 注意事项
+- 模型首次下载可能较慢，建议固定 Hugging Face 缓存目录，例如：
+
+```bash
+export HF_HOME=~/.cache/hf
+export HF_HUB_CACHE=~/.cache/hf/hub
+```
+
+- Safe Launch 依赖训练数据统计，训练数据需为 JSONL 格式（每行一个 JSON）
+
+## ❓ 常见坑
+- bitsandbytes 4bit 安装失败：请确认 CUDA 与 bnb 版本兼容；必要时降级/固定版本
+- llamafactory 版本不兼容：优先用与你的 `train.yaml` 模板兼容的版本
+- 数据分布过长：先降低 `cutoff_len`，再降低 `micro_batch`；必要时移除极长样本
+
+## 🤝 反馈与贡献
+欢迎提 issue、PR、star！
+
+### 贡献指南
+- 优先提交最小可复现的 bug report（包含配置、日志关键片段）
+- PR 建议包含：改动说明 + 本地验证命令 + 影响面评估
+
+### 反馈链接
+- Issues: https://github.com/weiweijiuzaizhe/autotune-kit/issues
