@@ -25,18 +25,10 @@ train:
   micro_batch: 1
 ```
 
-## 📦 Quickstart（3 步上手）
-1. 安装
+## 📦 Quickstart（更像产品的安装方式）
 
 ```bash
 pip install git+https://github.com/weiweijiuzaizhe/autotune-kit.git
-```
-
-2. 拷贝 `examples/atk.yaml` 并修改模型/数据路径
-
-3. 运行
-
-```bash
 atk run --config examples/atk.yaml
 ```
 
@@ -71,6 +63,14 @@ pip install llamafactory
 ```
 
 注意：`torch` 安装请按你的 CUDA/驱动环境选择官方推荐方式。
+
+## 🧑‍💻 开发者模式（本地开发/二次开发）
+
+```bash
+git clone https://github.com/weiweijiuzaizhe/autotune-kit.git
+cd autotune-kit
+pip install -e .
+```
 
 ## 🧪 演示案例
 一个最小 `examples/atk.yaml` 示例（请按实际路径修改）：
