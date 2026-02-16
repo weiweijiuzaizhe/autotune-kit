@@ -12,6 +12,10 @@ import time
 from pathlib import Path
 from typing import Any
 
+_TOOLS_DIR = Path(__file__).resolve().parent
+_REPO_ROOT = _TOOLS_DIR.parent.parent
+_DEFAULT_OUT_ROOT = _REPO_ROOT / "artifacts" / "vllm_routeA"
+
 
 def _read_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
@@ -41,12 +45,7 @@ def _mode_order(modes: set[str]) -> list[str]:
 
 
 def _list_latest(pattern: str) -> list[Path]:
-    return sorted(Path("/").glob(pattern), key=lambda p: p.stat().st_mtime, reverse=True)
-
-
-def _latest(pattern: str) -> Path | None:
-    paths = _list_latest(pattern)
-    return paths[0] if paths else None
+    return sorted(_REPO_ROOT.glob(pattern), key=lambda p: p.stat().st_mtime, reverse=True)
 
 
 def _has_modes(path: Path, required: set[str]) -> bool:
@@ -68,29 +67,27 @@ def _prefer_with_modes(pattern: str, required: set[str]) -> Path | None:
     return paths[0] if paths else None
 
 
-def _default_paths() -> tuple[Path | None, Path | None, Path | None]:
+def _default_paths() -> tuple[Path | None, Path | None, Path | None, Path | None]:
     preferred_modes = {"fp16", "bnb4"}
     reasoning = _prefer_with_modes(
-        "root/atk_project/artifacts/vllm_routeA/eval_run_*_lf_aligned/summary.json",
+        "artifacts/vllm_routeA/eval_run_*_lf_aligned/summary.json",
         preferred_modes,
     )
     factual_safety = _prefer_with_modes(
-        "root/atk_project/artifacts/vllm_routeA/factual_safety_run_*/summary.json",
+        "artifacts/vllm_routeA/factual_safety_run_*/summary.json",
+        preferred_modes,
+    )
+    format_summary = _prefer_with_modes(
+        "artifacts/vllm_routeA/format_run_*/summary.json",
         preferred_modes,
     )
 
-    candidates = [
-        _latest("root/atk_runs/run_*/sanity_report.json"),
-        Path("/root/ATK_V0_1_Demo_20260214_070303/sanity_report.json"),
-        Path("/root/atk_demo_runs/run_20260214_070303/sanity_report.json"),
-    ]
     sanity = None
-    for c in candidates:
-        if c and c.exists():
-            sanity = c
-            break
+    sanity_candidates = sorted((_REPO_ROOT / "atk_runs").glob("run_*/sanity_report.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+    if sanity_candidates:
+        sanity = sanity_candidates[0]
 
-    return reasoning, factual_safety, sanity
+    return reasoning, factual_safety, format_summary, sanity
 
 
 def _extract_reasoning(summary: dict[str, Any]) -> dict[str, dict[str, float]]:
@@ -134,21 +131,36 @@ def _extract_factual_safety(summary: dict[str, Any]) -> tuple[dict[str, dict[str
     return hallucination, safety
 
 
-def _extract_format(sanity: dict[str, Any]) -> dict[str, float]:
+def _extract_format_from_sanity(sanity: dict[str, Any]) -> dict[str, dict[str, float]]:
     return {
-        "base": float(sanity["base"]["format_score"]),
-        "tuned": float(sanity["tuned"]["format_score"]),
+        "shared": {
+            "base": float(sanity["base"]["format_score"]),
+            "tuned": float(sanity["tuned"]["format_score"]),
+        }
     }
+
+
+def _extract_format_from_summary(summary: dict[str, Any]) -> dict[str, dict[str, float]]:
+    out: dict[str, dict[str, float]] = {}
+    modes = summary.get("modes", {})
+    if isinstance(modes, dict):
+        for mode, blk in modes.items():
+            out[mode] = {
+                "base": float(blk["base"]["result"]["format_score"]),
+                "tuned": float(blk["tuned"]["result"]["format_score"]),
+            }
+    return out
 
 
 def _build_rows(
     reasoning: dict[str, dict[str, float]],
-    fmt: dict[str, float],
+    fmt_by_mode: dict[str, dict[str, float]],
     hallucination: dict[str, dict[str, float]],
     safety: dict[str, dict[str, float]],
-    format_shared_across_modes: bool,
 ) -> list[dict[str, str]]:
     mode_set = set(reasoning.keys()) | set(hallucination.keys()) | set(safety.keys())
+    if "shared" not in fmt_by_mode:
+        mode_set = mode_set | set(fmt_by_mode.keys())
     rows: list[dict[str, str]] = []
 
     for mode in _mode_order(mode_set):
@@ -156,7 +168,7 @@ def _build_rows(
         h = hallucination.get(mode)
         s = safety.get(mode)
 
-        f = fmt if format_shared_across_modes else None
+        f = fmt_by_mode.get(mode) or fmt_by_mode.get("shared")
 
         rows.append(
             {
@@ -199,30 +211,37 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--reasoning_summary", default="")
     ap.add_argument("--factual_safety_summary", default="")
+    ap.add_argument("--format_summary", default="")
     ap.add_argument("--sanity_report", default="")
-    ap.add_argument("--out_root", default="/root/atk_project/artifacts/vllm_routeA")
+    ap.add_argument("--out_root", default=str(_DEFAULT_OUT_ROOT))
     ap.add_argument("--out_name", default="")
-    ap.add_argument("--format_shared_across_modes", action=argparse.BooleanOptionalAction, default=True)
     args = ap.parse_args()
 
-    auto_reasoning, auto_factual_safety, auto_sanity = _default_paths()
+    auto_reasoning, auto_factual_safety, auto_format, auto_sanity = _default_paths()
 
     reasoning_path = Path(args.reasoning_summary) if args.reasoning_summary else auto_reasoning
     factual_safety_path = Path(args.factual_safety_summary) if args.factual_safety_summary else auto_factual_safety
+    format_summary_path = Path(args.format_summary) if args.format_summary else auto_format
     sanity_path = Path(args.sanity_report) if args.sanity_report else auto_sanity
 
     if not reasoning_path or not reasoning_path.exists():
         raise SystemExit("missing reasoning summary.json")
     if not factual_safety_path or not factual_safety_path.exists():
         raise SystemExit("missing factual_safety summary.json")
-    if not sanity_path or not sanity_path.exists():
-        raise SystemExit("missing sanity_report.json")
+
+    if format_summary_path and format_summary_path.exists():
+        fmt_by_mode = _extract_format_from_summary(_read_json(format_summary_path))
+        fmt_source = format_summary_path
+    elif sanity_path and sanity_path.exists():
+        fmt_by_mode = _extract_format_from_sanity(_read_json(sanity_path))
+        fmt_source = sanity_path
+    else:
+        raise SystemExit("missing format summary or sanity report")
 
     reasoning = _extract_reasoning(_read_json(reasoning_path))
     hallucination, safety = _extract_factual_safety(_read_json(factual_safety_path))
-    fmt = _extract_format(_read_json(sanity_path))
 
-    rows = _build_rows(reasoning, fmt, hallucination, safety, args.format_shared_across_modes)
+    rows = _build_rows(reasoning, fmt_by_mode, hallucination, safety)
 
     out_root = Path(args.out_root).expanduser().resolve()
     out_root.mkdir(parents=True, exist_ok=True)
@@ -233,7 +252,7 @@ def main() -> int:
     meta = {
         "generated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
         "reasoning_source": str(reasoning_path),
-        "format_source": str(sanity_path),
+        "format_source": str(fmt_source),
         "factual_safety_source": str(factual_safety_path),
     }
 

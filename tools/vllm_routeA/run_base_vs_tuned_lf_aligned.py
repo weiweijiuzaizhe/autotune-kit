@@ -15,9 +15,16 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import time
 from pathlib import Path
+
+
+_TOOLS_DIR = Path(__file__).resolve().parent
+_REPO_ROOT = _TOOLS_DIR.parent.parent
+_DEFAULT_OUT_ROOT = _REPO_ROOT / "artifacts" / "vllm_routeA"
+_DEFAULT_CONDA_BIN = os.environ.get("CONDA_EXE", "conda")
 
 
 def _run(cmd: list[str], log_path: Path) -> None:
@@ -97,7 +104,7 @@ def _score_one_mode(
 
     base_cmd = [
         args.conda_bin, "run", "-n", args.score_env, "python",
-        "/root/atk_project/tools/vllm_routeA/score_mcq_lf_aligned_vllm.py",
+        str(_TOOLS_DIR / "score_mcq_lf_aligned_vllm.py"),
         "--items", str(items_path),
         "--model", args.base,
         "--tokenizer", args.base,
@@ -107,7 +114,7 @@ def _score_one_mode(
 
     tuned_cmd = [
         args.conda_bin, "run", "-n", args.score_env, "python",
-        "/root/atk_project/tools/vllm_routeA/score_mcq_lf_aligned_vllm.py",
+        str(_TOOLS_DIR / "score_mcq_lf_aligned_vllm.py"),
         "--items", str(items_path),
         "--model", str(Path(args.tuned).expanduser().resolve()),
         "--tokenizer", args.base,
@@ -180,11 +187,11 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="Qwen/Qwen2.5-7B-Instruct")
     ap.add_argument("--tuned", required=True, help="Merged model dir")
-    ap.add_argument("--out_root", default="/root/atk_project/artifacts/vllm_routeA")
+    ap.add_argument("--out_root", default=str(_DEFAULT_OUT_ROOT))
 
     ap.add_argument("--build_env", default="py310", help="Env with llamafactory")
     ap.add_argument("--score_env", default="vllm014", help="Env with vllm")
-    ap.add_argument("--conda_bin", default="/usr/local/miniconda3/bin/conda", help="Conda executable path")
+    ap.add_argument("--conda_bin", default=_DEFAULT_CONDA_BIN, help="Conda executable path")
 
     ap.add_argument("--n_shot_en", type=int, default=0)
     ap.add_argument("--n_shot_zh", type=int, default=0)
@@ -219,7 +226,7 @@ def main() -> int:
 
     build_cmd = [
         args.conda_bin, "run", "-n", args.build_env, "python",
-        "/root/atk_project/tools/vllm_routeA/build_lf_aligned_items.py",
+        str(_TOOLS_DIR / "build_lf_aligned_items.py"),
         "--out", str(items_dir),
         "--base_model", args.base,
         "--n_shot_en", str(args.n_shot_en),

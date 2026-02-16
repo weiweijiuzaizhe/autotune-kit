@@ -1,153 +1,77 @@
-# ATK
+# ATK (AutoTune-Kit)
 
-ATK — 单卡微调安全护盾（预跑 OOM 拦截 + 体检报告）
+ATK 是一个单卡微调与评测工具集，目标是把「安全起跑 + 快速训练 + 统一评测」做成可复现的 CLI 流程。
 
-ATK 是一个极简 CLI，用于在训练前做 Safe Launch 预跑拦截显存高风险配置，并在训练后生成 base vs tuned 的 sanity 对比与一页报告。
+## 一键复现：Unsloth 微调 + vLLM 全链路评测
 
-Safe Launch HIGH RISK 拦截示例（节选）：
-
-```text
-## 1) Safe Launch
-- passed: False
-- risk_level: HIGH
-- planned: {'cutoff_len': 4096, 'micro_batch': 2}
-- trial_passed: True
-- exit_code: 0
-- error_keyword: HIGH_RISK
-- suggestion: Planned config is HIGH RISK. Recommended: cutoff_len=1024 and micro_batch=1.
-```
-
-推荐修改（可直接复制到配置里）：
-
-```yaml
-train:
-  cutoff_len: 1024
-  micro_batch: 1
-```
-
-## 📦 Quickstart（GitHub 直接 pip 安装）
-
-一条命令（推荐，用户不用手写 `--extra-index-url`）：
-
-```bash
-python3 -m pip install -U pip \
-  && python3 -m pip install git+https://github.com/weiweijiuzaizhe/autotune-kit.git \
-  && atk bootstrap --cuda cu126 \
-  && atk run --config examples/atk.yaml
-```
-
-如果你已经装好了训练栈，也可以直接运行：
-
-```bash
-atk run --config examples/atk.yaml
-```
-
-默认输出目录：`./atk_runs/run_<timestamp>/`（以当前工作目录为根）。
-
-## ⭐ 核心功能亮点
-- Safe Launch：训练前自动统计数据长度，进行 5 steps 试跑，并对明显高风险配置给出可复制修复建议
-- Sanity Delta：训练后自动生成 JSON 格式遵循率 + 简单 QA 的 base/tuned 对比与 delta
-- 面向单卡 24GB GPU（如 RTX 4090），覆盖 7B–32B 的量化微调工作流（取决于配置与数据长度）
-- 无 Web UI，仅 CLI；ATK 自身依赖极少（仅 `PyYAML`），其余依赖由训练栈提供
-
-## 📌 示例输出
-每次运行会创建一个 `run_dir`，例如：
-
-```text
-./atk_runs/run_YYYYmmdd_HHMMSS/
-  atk_report.md
-  lf_train.log
-  safe_launch.json
-  sanity_report.json
-  ...
-```
-
-## 🧠 安装说明
-推荐环境：CUDA 12 + Python 3.10。
-
-ATK 会调用 `llamafactory-cli train` 完成训练，因此运行前需要准备训练栈依赖（示例）：
-
-```bash
-pip install -U "transformers>=4.40" accelerate datasets peft bitsandbytes sentencepiece
-pip install llamafactory
-```
-
-注意：`torch` 安装请按你的 CUDA/驱动环境选择官方推荐方式。
-
-## 🧑‍💻 开发者模式（本地开发/二次开发）
+适用场景：新开一台 GPU 机器后，希望一条命令复现你这次已经跑通的流程。
 
 ```bash
 git clone https://github.com/weiweijiuzaizhe/autotune-kit.git
 cd autotune-kit
-pip install -e .
+bash scripts/repro_unsloth_vllm_full.sh
 ```
 
-## 🧪 演示案例
-一个最小 `examples/atk.yaml` 示例（请按实际路径修改）：
+该命令默认会执行：
+1. `bootstrap` 两个 conda 环境（训练 env + vLLM 评测 env）
+2. 自动准备训练数据（若 `./data/train.jsonl` 不存在）
+3. 用 `LLaMA-Factory + Unsloth + QLoRA 4bit` 做一次 SFT 微调
+4. 合并 LoRA adapter 为完整模型目录（给 vLLM 加载）
+5. 跑 vLLM 全链路评测（推理/格式/幻觉/安全，含 fp16 与 bnb4）
+6. 生成统一四维报告表
 
-```yaml
-model:
-  base: Qwen/Qwen2.5-7B-Instruct
-data:
-  train: ./data/train.jsonl
-output:
-  dir: ./atk_outputs/demo1
-train:
-  template: qwen
-  cutoff_len: 1024
-  max_steps: 50
-  micro_batch: 1
-  grad_acc: 4
-  lr: 0.0001
-  epochs: 1
-  qlora_4bit: true
-```
+运行结束后会打印 `run_dir`，默认在：
+- `./artifacts/repro_runs/repro_<timestamp>/`
 
-字段说明（最小必需）：
-- `model.base`：base 模型名称或本地路径
-- `data.train`：Alpaca JSONL（包含 instruction/input/output）
-- `output.dir`：训练产物输出根目录
-- `train.*`：训练关键参数（ATK 会写入一份 LLaMA-Factory 兼容的 `train.yaml`）
+核心产物：
+- `lf_train.log`
+- `merged_model/`
+- `evals/eval_run_*_lf_aligned/summary.json`
+- `evals/format_run_*/summary.json`
+- `evals/factual_safety_run_*/summary.json`
+- `four_dim/four_dim_table.md`
 
-## 📍 注意事项
-- 模型首次下载可能较慢，建议固定 Hugging Face 缓存目录，例如：
+## 可调参数
 
 ```bash
-export HF_HOME=~/.cache/hf
-export HF_HUB_CACHE=~/.cache/hf/hub
+# 示例：跳过 bootstrap，指定训练步数与数据路径
+bash scripts/repro_unsloth_vllm_full.sh \
+  --skip-bootstrap \
+  --max-steps 200 \
+  --train-jsonl ./data/train.jsonl
 ```
 
-- Safe Launch 依赖训练数据统计，训练数据需为 JSONL 格式（每行一个 JSON）
+环境变量可覆盖：
+- `TRAIN_ENV`（默认 `py310`）
+- `SCORE_ENV`（默认 `vllm014`）
+- `BASE_MODEL`（默认 `Qwen/Qwen2.5-7B-Instruct`）
+- `RUN_ROOT`（默认 `./artifacts/repro_runs`）
+- `MAX_STEPS`、`CUTOFF_LEN`、`MICRO_BATCH`、`GRAD_ACC`
+- `LIMIT_MMLU`、`LIMIT_PER_SUBJECT`、`CEVAL_SUBJECT_LIMIT`、`CMMLU_SUBJECT_LIMIT`
+- `TRUTHFUL_LIMIT`、`JBB_HARMFUL_LIMIT`、`JBB_BENIGN_LIMIT`
 
-## ❓ 常见坑
-- bitsandbytes 4bit 安装失败：请确认 CUDA 与 bnb 版本兼容；必要时降级/固定版本
-- llamafactory 版本不兼容：优先用与你的 `train.yaml` 模板兼容的版本
-- 数据分布过长：先降低 `cutoff_len`，再降低 `micro_batch`；必要时移除极长样本
+## 目录说明
 
-## 🗂️ 目录结构
 ```text
 .
-  LICENSE
-  README.md
-  pyproject.toml
-  examples/
-    atk.yaml
-  atk/
-    __init__.py
-    cli.py
-    config.py
-    init.py
-    report.py
-    run.py
-    safelaunch.py
-    sanity.py
-    utils.py
-    templates/
-      lf_train_template.yaml
+├── atk/                              # ATK CLI 核心逻辑
+├── assets/lf_eval_tasks/             # LF 对齐评测映射（mmlu/ceval/cmmlu）
+├── examples/                         # 最小配置示例
+├── scripts/
+│   ├── bootstrap_repro_envs.sh       # 新机器依赖与缓存初始化
+│   ├── generate_demo_train_jsonl.py  # 生成 200+3 样本训练集
+│   └── repro_unsloth_vllm_full.sh    # 一键全链路复现入口
+└── tools/vllm_routeA/                # vLLM 评测与四维报告工具
 ```
 
-## 🤝 反馈与贡献
-欢迎提 issue、PR、star！
+## 仍可单独使用 ATK CLI
 
-- 贡献指南：优先提交最小可复现的 bug report（包含配置、日志关键片段）。PR 建议包含：改动说明 + 本地验证命令 + 影响面评估。
-- 反馈链接：Issues https://github.com/weiweijiuzaizhe/autotune-kit/issues
+```bash
+pip install -e .
+atk run --config examples/atk.yaml
+```
+
+## 备注
+
+- 仓库内脚本已去除 `/root/...` 硬编码，默认使用仓库相对路径。
+- HF 缓存默认使用 `~/.cache/hf`（bootstrap 会写入 `~/.bashrc`）。

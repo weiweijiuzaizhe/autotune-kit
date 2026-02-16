@@ -24,6 +24,11 @@ from llamafactory.eval.template import get_eval_template
 from llamafactory.hparams import DataArguments
 
 
+_TOOLS_DIR = Path(__file__).resolve().parent
+_REPO_ROOT = _TOOLS_DIR.parent.parent
+_DEFAULT_TASK_DIR = _REPO_ROOT / "assets" / "lf_eval_tasks"
+
+
 def _load_mapping(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
@@ -71,7 +76,7 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", required=True)
     ap.add_argument("--base_model", default="Qwen/Qwen2.5-7B-Instruct")
-    ap.add_argument("--task_dir", default="/root/lf_eval_tasks")
+    ap.add_argument("--task_dir", default=str(_DEFAULT_TASK_DIR))
     ap.add_argument("--template", default="fewshot")
     ap.add_argument("--n_shot_en", type=int, default=0)
     ap.add_argument("--n_shot_zh", type=int, default=0)

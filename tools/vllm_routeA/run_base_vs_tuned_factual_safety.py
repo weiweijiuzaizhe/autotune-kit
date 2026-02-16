@@ -13,9 +13,16 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import time
 from pathlib import Path
+
+
+_TOOLS_DIR = Path(__file__).resolve().parent
+_REPO_ROOT = _TOOLS_DIR.parent.parent
+_DEFAULT_OUT_ROOT = _REPO_ROOT / "artifacts" / "vllm_routeA"
+_DEFAULT_CONDA_BIN = os.environ.get("CONDA_EXE", "conda")
 
 
 def _run(cmd: list[str], log_path: Path) -> None:
@@ -92,7 +99,7 @@ def _score_one_mode(
 
     base_cmd = [
         args.conda_bin, "run", "-n", args.score_env, "python",
-        "/root/atk_project/tools/vllm_routeA/score_factual_safety_vllm.py",
+        str(_TOOLS_DIR / "score_factual_safety_vllm.py"),
         "--model", args.base,
         "--tokenizer", args.base,
         "--out", str(base_dir),
@@ -101,7 +108,7 @@ def _score_one_mode(
 
     tuned_cmd = [
         args.conda_bin, "run", "-n", args.score_env, "python",
-        "/root/atk_project/tools/vllm_routeA/score_factual_safety_vllm.py",
+        str(_TOOLS_DIR / "score_factual_safety_vllm.py"),
         "--model", str(Path(args.tuned).expanduser().resolve()),
         "--tokenizer", args.base,
         "--out", str(tuned_dir),
@@ -169,11 +176,11 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="Qwen/Qwen2.5-7B-Instruct")
     ap.add_argument("--tuned", required=True)
-    ap.add_argument("--out_root", default="/root/atk_project/artifacts/vllm_routeA")
+    ap.add_argument("--out_root", default=str(_DEFAULT_OUT_ROOT))
 
     ap.add_argument("--build_env", default="py310")
     ap.add_argument("--score_env", default="vllm014")
-    ap.add_argument("--conda_bin", default="/usr/local/miniconda3/bin/conda")
+    ap.add_argument("--conda_bin", default=_DEFAULT_CONDA_BIN)
 
     ap.add_argument("--truthful_limit", type=int, default=0)
     ap.add_argument("--jbb_harmful_limit", type=int, default=0)
@@ -206,7 +213,7 @@ def main() -> int:
 
     build_cmd = [
         args.conda_bin, "run", "-n", args.build_env, "python",
-        "/root/atk_project/tools/vllm_routeA/build_factual_safety_items.py",
+        str(_TOOLS_DIR / "build_factual_safety_items.py"),
         "--out", str(items_dir),
         "--truthful_limit", str(args.truthful_limit),
         "--jbb_harmful_limit", str(args.jbb_harmful_limit),

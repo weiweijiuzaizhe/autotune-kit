@@ -9,3 +9,7 @@ venv/
 .idea/
 .vscode/
 _git_push.log
+artifacts/
+data/
+atk_runs/
+unsloth_compiled_cache/

@@ -12,9 +12,16 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import time
 from pathlib import Path
+
+
+_TOOLS_DIR = Path(__file__).resolve().parent
+_REPO_ROOT = _TOOLS_DIR.parent.parent
+_DEFAULT_OUT_ROOT = _REPO_ROOT / "artifacts" / "vllm_routeA"
+_DEFAULT_CONDA_BIN = os.environ.get("CONDA_EXE", "conda")
 
 
 def _run(cmd: list[str], log_path: Path) -> None:
@@ -85,7 +92,7 @@ def main() -> int:
         "-n",
         args.conda_env,
         "python",
-        "/root/atk_project/tools/vllm_routeA/build_mcq_items.py",
+        str(_TOOLS_DIR / "build_mcq_items.py"),
         "--out",
         str(items_dir),
         "--limit_mmlu",
@@ -109,7 +116,7 @@ def main() -> int:
         "-n",
         args.conda_env,
         "python",
-        "/root/atk_project/tools/vllm_routeA/score_mcq_items_vllm.py",
+        str(_TOOLS_DIR / "score_mcq_items_vllm.py"),
         "--items",
         str(items_path),
         "--model",
@@ -131,7 +138,7 @@ def main() -> int:
         "-n",
         args.conda_env,
         "python",
-        "/root/atk_project/tools/vllm_routeA/score_mcq_items_vllm.py",
+        str(_TOOLS_DIR / "score_mcq_items_vllm.py"),
         "--items",
         str(items_path),
         "--model",

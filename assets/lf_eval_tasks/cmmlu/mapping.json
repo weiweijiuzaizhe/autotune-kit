@@ -1,0 +1,270 @@
+{
+  "agronomy": {
+    "name": "agronomy",
+    "category": "Other"
+  },
+  "anatomy": {
+    "name": "anatomy",
+    "category": "Other"
+  },
+  "ancient_chinese": {
+    "name": "ancient_chinese",
+    "category": "Other"
+  },
+  "arts": {
+    "name": "arts",
+    "category": "Other"
+  },
+  "astronomy": {
+    "name": "astronomy",
+    "category": "Other"
+  },
+  "business_ethics": {
+    "name": "business_ethics",
+    "category": "Other"
+  },
+  "chinese_civil_service_exam": {
+    "name": "chinese_civil_service_exam",
+    "category": "Other"
+  },
+  "chinese_driving_rule": {
+    "name": "chinese_driving_rule",
+    "category": "Other"
+  },
+  "chinese_food_culture": {
+    "name": "chinese_food_culture",
+    "category": "Other"
+  },
+  "chinese_foreign_policy": {
+    "name": "chinese_foreign_policy",
+    "category": "Other"
+  },
+  "chinese_history": {
+    "name": "chinese_history",
+    "category": "Other"
+  },
+  "chinese_literature": {
+    "name": "chinese_literature",
+    "category": "Other"
+  },
+  "chinese_teacher_qualification": {
+    "name": "chinese_teacher_qualification",
+    "category": "Other"
+  },
+  "clinical_knowledge": {
+    "name": "clinical_knowledge",
+    "category": "Other"
+  },
+  "college_actuarial_science": {
+    "name": "college_actuarial_science",
+    "category": "Other"
+  },
+  "college_education": {
+    "name": "college_education",
+    "category": "Other"
+  },
+  "college_engineering_hydrology": {
+    "name": "college_engineering_hydrology",
+    "category": "Other"
+  },
+  "college_law": {
+    "name": "college_law",
+    "category": "Other"
+  },
+  "college_mathematics": {
+    "name": "college_mathematics",
+    "category": "Other"
+  },
+  "college_medical_statistics": {
+    "name": "college_medical_statistics",
+    "category": "Other"
+  },
+  "college_medicine": {
+    "name": "college_medicine",
+    "category": "Other"
+  },
+  "computer_science": {
+    "name": "computer_science",
+    "category": "Other"
+  },
+  "computer_security": {
+    "name": "computer_security",
+    "category": "Other"
+  },
+  "conceptual_physics": {
+    "name": "conceptual_physics",
+    "category": "Other"
+  },
+  "construction_project_management": {
+    "name": "construction_project_management",
+    "category": "Other"
+  },
+  "economics": {
+    "name": "economics",
+    "category": "Other"
+  },
+  "education": {
+    "name": "education",
+    "category": "Other"
+  },
+  "electrical_engineering": {
+    "name": "electrical_engineering",
+    "category": "Other"
+  },
+  "elementary_chinese": {
+    "name": "elementary_chinese",
+    "category": "Other"
+  },
+  "elementary_commonsense": {
+    "name": "elementary_commonsense",
+    "category": "Other"
+  },
+  "elementary_information_and_technology": {
+    "name": "elementary_information_and_technology",
+    "category": "Other"
+  },
+  "elementary_mathematics": {
+    "name": "elementary_mathematics",
+    "category": "Other"
+  },
+  "ethnology": {
+    "name": "ethnology",
+    "category": "Other"
+  },
+  "food_science": {
+    "name": "food_science",
+    "category": "Other"
+  },
+  "genetics": {
+    "name": "genetics",
+    "category": "Other"
+  },
+  "global_facts": {
+    "name": "global_facts",
+    "category": "Other"
+  },
+  "high_school_biology": {
+    "name": "high_school_biology",
+    "category": "Other"
+  },
+  "high_school_chemistry": {
+    "name": "high_school_chemistry",
+    "category": "Other"
+  },
+  "high_school_geography": {
+    "name": "high_school_geography",
+    "category": "Other"
+  },
+  "high_school_mathematics": {
+    "name": "high_school_mathematics",
+    "category": "Other"
+  },
+  "high_school_physics": {
+    "name": "high_school_physics",
+    "category": "Other"
+  },
+  "high_school_politics": {
+    "name": "high_school_politics",
+    "category": "Other"
+  },
+  "human_sexuality": {
+    "name": "human_sexuality",
+    "category": "Other"
+  },
+  "international_law": {
+    "name": "international_law",
+    "category": "Other"
+  },
+  "journalism": {
+    "name": "journalism",
+    "category": "Other"
+  },
+  "jurisprudence": {
+    "name": "jurisprudence",
+    "category": "Other"
+  },
+  "legal_and_moral_basis": {
+    "name": "legal_and_moral_basis",
+    "category": "Other"
+  },
+  "logical": {
+    "name": "logical",
+    "category": "Other"
+  },
+  "machine_learning": {
+    "name": "machine_learning",
+    "category": "Other"
+  },
+  "management": {
+    "name": "management",
+    "category": "Other"
+  },
+  "marketing": {
+    "name": "marketing",
+    "category": "Other"
+  },
+  "marxist_theory": {
+    "name": "marxist_theory",
+    "category": "Other"
+  },
+  "modern_chinese": {
+    "name": "modern_chinese",
+    "category": "Other"
+  },
+  "nutrition": {
+    "name": "nutrition",
+    "category": "Other"
+  },
+  "philosophy": {
+    "name": "philosophy",
+    "category": "Other"
+  },
+  "professional_accounting": {
+    "name": "professional_accounting",
+    "category": "Other"
+  },
+  "professional_law": {
+    "name": "professional_law",
+    "category": "Other"
+  },
+  "professional_medicine": {
+    "name": "professional_medicine",
+    "category": "Other"
+  },
+  "professional_psychology": {
+    "name": "professional_psychology",
+    "category": "Other"
+  },
+  "public_relations": {
+    "name": "public_relations",
+    "category": "Other"
+  },
+  "security_study": {
+    "name": "security_study",
+    "category": "Other"
+  },
+  "sociology": {
+    "name": "sociology",
+    "category": "Other"
+  },
+  "sports_science": {
+    "name": "sports_science",
+    "category": "Other"
+  },
+  "traditional_chinese_medicine": {
+    "name": "traditional_chinese_medicine",
+    "category": "Other"
+  },
+  "virology": {
+    "name": "virology",
+    "category": "Other"
+  },
+  "world_history": {
+    "name": "world_history",
+    "category": "Other"
+  },
+  "world_religions": {
+    "name": "world_religions",
+    "category": "Other"
+  }
+}

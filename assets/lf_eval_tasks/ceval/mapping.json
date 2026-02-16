@@ -1,0 +1,210 @@
+{
+  "accountant": {
+    "name": "accountant",
+    "category": "Other"
+  },
+  "advanced_mathematics": {
+    "name": "advanced_mathematics",
+    "category": "Other"
+  },
+  "art_studies": {
+    "name": "art_studies",
+    "category": "Other"
+  },
+  "basic_medicine": {
+    "name": "basic_medicine",
+    "category": "Other"
+  },
+  "business_administration": {
+    "name": "business_administration",
+    "category": "Other"
+  },
+  "chinese_language_and_literature": {
+    "name": "chinese_language_and_literature",
+    "category": "Other"
+  },
+  "civil_servant": {
+    "name": "civil_servant",
+    "category": "Other"
+  },
+  "clinical_medicine": {
+    "name": "clinical_medicine",
+    "category": "Other"
+  },
+  "college_chemistry": {
+    "name": "college_chemistry",
+    "category": "Other"
+  },
+  "college_economics": {
+    "name": "college_economics",
+    "category": "Other"
+  },
+  "college_physics": {
+    "name": "college_physics",
+    "category": "Other"
+  },
+  "college_programming": {
+    "name": "college_programming",
+    "category": "Other"
+  },
+  "computer_architecture": {
+    "name": "computer_architecture",
+    "category": "Other"
+  },
+  "computer_network": {
+    "name": "computer_network",
+    "category": "Other"
+  },
+  "discrete_mathematics": {
+    "name": "discrete_mathematics",
+    "category": "Other"
+  },
+  "education_science": {
+    "name": "education_science",
+    "category": "Other"
+  },
+  "electrical_engineer": {
+    "name": "electrical_engineer",
+    "category": "Other"
+  },
+  "environmental_impact_assessment_engineer": {
+    "name": "environmental_impact_assessment_engineer",
+    "category": "Other"
+  },
+  "fire_engineer": {
+    "name": "fire_engineer",
+    "category": "Other"
+  },
+  "high_school_biology": {
+    "name": "high_school_biology",
+    "category": "Other"
+  },
+  "high_school_chemistry": {
+    "name": "high_school_chemistry",
+    "category": "Other"
+  },
+  "high_school_chinese": {
+    "name": "high_school_chinese",
+    "category": "Other"
+  },
+  "high_school_geography": {
+    "name": "high_school_geography",
+    "category": "Other"
+  },
+  "high_school_history": {
+    "name": "high_school_history",
+    "category": "Other"
+  },
+  "high_school_mathematics": {
+    "name": "high_school_mathematics",
+    "category": "Other"
+  },
+  "high_school_physics": {
+    "name": "high_school_physics",
+    "category": "Other"
+  },
+  "high_school_politics": {
+    "name": "high_school_politics",
+    "category": "Other"
+  },
+  "ideological_and_moral_cultivation": {
+    "name": "ideological_and_moral_cultivation",
+    "category": "Other"
+  },
+  "law": {
+    "name": "law",
+    "category": "Other"
+  },
+  "legal_professional": {
+    "name": "legal_professional",
+    "category": "Other"
+  },
+  "logic": {
+    "name": "logic",
+    "category": "Other"
+  },
+  "mao_zedong_thought": {
+    "name": "mao_zedong_thought",
+    "category": "Other"
+  },
+  "marxism": {
+    "name": "marxism",
+    "category": "Other"
+  },
+  "metrology_engineer": {
+    "name": "metrology_engineer",
+    "category": "Other"
+  },
+  "middle_school_biology": {
+    "name": "middle_school_biology",
+    "category": "Other"
+  },
+  "middle_school_chemistry": {
+    "name": "middle_school_chemistry",
+    "category": "Other"
+  },
+  "middle_school_geography": {
+    "name": "middle_school_geography",
+    "category": "Other"
+  },
+  "middle_school_history": {
+    "name": "middle_school_history",
+    "category": "Other"
+  },
+  "middle_school_mathematics": {
+    "name": "middle_school_mathematics",
+    "category": "Other"
+  },
+  "middle_school_physics": {
+    "name": "middle_school_physics",
+    "category": "Other"
+  },
+  "middle_school_politics": {
+    "name": "middle_school_politics",
+    "category": "Other"
+  },
+  "modern_chinese_history": {
+    "name": "modern_chinese_history",
+    "category": "Other"
+  },
+  "operating_system": {
+    "name": "operating_system",
+    "category": "Other"
+  },
+  "physician": {
+    "name": "physician",
+    "category": "Other"
+  },
+  "plant_protection": {
+    "name": "plant_protection",
+    "category": "Other"
+  },
+  "probability_and_statistics": {
+    "name": "probability_and_statistics",
+    "category": "Other"
+  },
+  "professional_tour_guide": {
+    "name": "professional_tour_guide",
+    "category": "Other"
+  },
+  "sports_science": {
+    "name": "sports_science",
+    "category": "Other"
+  },
+  "tax_accountant": {
+    "name": "tax_accountant",
+    "category": "Other"
+  },
+  "teacher_qualification": {
+    "name": "teacher_qualification",
+    "category": "Other"
+  },
+  "urban_and_rural_planner": {
+    "name": "urban_and_rural_planner",
+    "category": "Other"
+  },
+  "veterinary_medicine": {
+    "name": "veterinary_medicine",
+    "category": "Other"
+  }
+}
