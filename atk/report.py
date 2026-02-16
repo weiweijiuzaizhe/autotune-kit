@@ -25,6 +25,10 @@ def _recommended_changes_block() -> str:
     return "\n".join(lines)
 
 
+def _fmt_pct(v: float) -> str:
+    return f"{v * 100:.2f}%"
+
+
 def build_report(
     *,
     run_dir: Path,
@@ -36,73 +40,117 @@ def build_report(
 ) -> str:
     has_oom = False
     has_nan = False
-    lf_log = run_dir / 'lf_train.log'
+    lf_log = run_dir / "lf_train.log"
     if lf_log.exists():
-        txt = lf_log.read_text(encoding='utf-8', errors='ignore')
+        txt = lf_log.read_text(encoding="utf-8", errors="ignore")
         has_oom = bool(re.search(r"oom|out of memory", txt, re.I))
         has_nan = bool(re.search(r"\bnan\b", txt, re.I))
 
     lines = []
-    lines.append('# ATK Report')
-    lines.append('')
+    lines.append("# ATK Report")
+    lines.append("")
 
-    # Put Safe Launch (and fixes) first so it appears in head -n 30.
-    lines.append('## 1) Safe Launch')
+    lines.append("## 1) Safe Launch")
     lines.append(f"- passed: {safe_launch.get('passed')}")
-    if 'risk_level' in safe_launch:
+    if "risk_level" in safe_launch:
         lines.append(f"- risk_level: {safe_launch.get('risk_level')}")
-    if 'planned' in safe_launch:
+    if "planned" in safe_launch:
         lines.append(f"- planned: {safe_launch.get('planned')}")
-    if 'trial_passed' in safe_launch:
+    if "trial_passed" in safe_launch:
         lines.append(f"- trial_passed: {safe_launch.get('trial_passed')}")
     lines.append(f"- exit_code: {safe_launch.get('exit_code')}")
     lines.append(f"- error_keyword: {safe_launch.get('error_keyword')}")
-    if safe_launch.get('suggestion'):
+    if safe_launch.get("suggestion"):
         lines.append(f"- suggestion: {safe_launch.get('suggestion')}")
-    lines.append('')
+    lines.append("")
 
-    if not safe_launch.get('passed', True):
+    if not safe_launch.get("passed", True):
         lines.append(_recommended_changes_block())
-        lines.append('')
+        lines.append("")
 
-    lines.append('## 2) 训练状态')
+    lines.append("## 2) 训练状态")
     lines.append(f"- train_exit_code: {train_exit_code}")
     lines.append(f"- OOM keyword found: {has_oom}")
     lines.append(f"- NaN keyword found: {has_nan}")
-    lines.append('')
+    lines.append("")
 
-    lines.append('## 3) Sanity Delta')
-    b = sanity.get('base', {})
-    t = sanity.get('tuned', {})
-    d = sanity.get('delta', {})
-    lines.append(f"- base format/qa: {b.get('format_score')}/{b.get('qa_score')}")
-    lines.append(f"- tuned format/qa: {t.get('format_score')}/{t.get('qa_score')}")
-    lines.append(f"- delta format/qa: {d.get('format_delta')}/{d.get('qa_delta')}")
-    lines.append('')
+    mode = sanity.get("mode")
+    if sanity.get("skipped"):
+        lines.append("## 3) Sanity / Quick Eval")
+        lines.append("- skipped: true")
+        lines.append(f"- note: {sanity.get('note')}")
+        lines.append("")
+    elif mode == "quick4d":
+        c = sanity.get("counts", {})
+        b = sanity.get("base", {})
+        t = sanity.get("tuned", {})
+        d = sanity.get("delta_pct", {})
+        lines.append("## 3) Quick 4D Eval (Post-Train)")
+        lines.append(f"- elapsed_sec: {sanity.get('elapsed_sec')}")
+        lines.append(
+            f"- counts: reasoning={c.get('reasoning_mcq')}, format={c.get('format')}, hallucination={c.get('hallucination')}, safety_harmful={c.get('safety_harmful')}, safety_benign={c.get('safety_benign')}"
+        )
+        lines.append(
+            f"- 推理(MCQ): base {b.get('reasoning_mcq_acc')} / tuned {t.get('reasoning_mcq_acc')} / Δ {_fmt_pct(d.get('reasoning_mcq_acc', 0.0))}"
+        )
+        lines.append(
+            f"- 格式(format): base {b.get('format_score')} / tuned {t.get('format_score')} / Δ {_fmt_pct(d.get('format_score', 0.0))}"
+        )
+        lines.append(
+            f"- 幻觉(proxy): base {b.get('hallucination_truthful_proxy_acc')} / tuned {t.get('hallucination_truthful_proxy_acc')} / Δ {_fmt_pct(d.get('hallucination_truthful_proxy_acc', 0.0))}"
+        )
+        lines.append(
+            f"- 安全(balanced): base {b.get('safety_balanced_score')} / tuned {t.get('safety_balanced_score')} / Δ {_fmt_pct(d.get('safety_balanced_score', 0.0))}"
+        )
+        if sanity.get("note"):
+            lines.append(f"- note: {sanity.get('note')}")
+        lines.append("")
+    elif mode == "quick":
+        t = sanity.get("tuned", {})
+        lines.append("## 3) Quick Eval (Post-Train)")
+        lines.append("- mode: quick (tuned only)")
+        lines.append(f"- num_format: {sanity.get('num_format')}")
+        lines.append(f"- num_qa: {sanity.get('num_qa')}")
+        lines.append(f"- tuned format/qa: {t.get('format_score')}/{t.get('qa_score')}")
+        lines.append(f"- elapsed_sec: {sanity.get('elapsed_sec')}")
+        if sanity.get("note"):
+            lines.append(f"- note: {sanity.get('note')}")
+        lines.append("")
+    else:
+        b = sanity.get("base", {})
+        t = sanity.get("tuned", {})
+        d = sanity.get("delta", {})
+        lines.append("## 3) Sanity Delta")
+        lines.append(f"- base format/qa: {b.get('format_score')}/{b.get('qa_score')}")
+        lines.append(f"- tuned format/qa: {t.get('format_score')}/{t.get('qa_score')}")
+        lines.append(f"- delta format/qa: {d.get('format_delta')}/{d.get('qa_delta')}")
+        if sanity.get("elapsed_sec") is not None:
+            lines.append(f"- elapsed_sec: {sanity.get('elapsed_sec')}")
+        lines.append("")
 
-    lines.append('## 4) 数据长度统计')
+    lines.append("## 4) 数据长度统计")
     lines.append(f"- num_samples: {data_stats.get('num_samples')}")
     lines.append(
         f"- min/p50/p95/max: {data_stats.get('min')}/{data_stats.get('p50')}/{data_stats.get('p95')}/{data_stats.get('max')}"
     )
     lines.append(f"- top1: {data_stats.get('top1')}")
-    lines.append('')
+    lines.append("")
 
-    lines.append('## 5) 环境摘要')
-    lines.append('```text')
+    lines.append("## 5) 环境摘要")
+    lines.append("```text")
     for ln in env_text.strip().splitlines()[:20]:
         lines.append(ln)
-    lines.append('```')
-    lines.append('')
+    lines.append("```")
+    lines.append("")
 
-    lines.append('## 6) 下一步建议')
-    lines.append('- 提升 max_steps 到 300~1000 观察 delta 是否稳定提升。')
-    lines.append('- 如果显存紧张，优先降低 cutoff_len，其次降低 micro_batch。')
+    lines.append("## 6) 下一步建议")
+    lines.append("- 若用于发布口径，建议改跑 full 配置并固定随机种子与评测集。")
+    lines.append("- 若显存紧张，优先降低 cutoff_len，其次降低 micro_batch。")
 
-    return '\n'.join(lines) + '\n'
+    return "\n".join(lines) + "\n"
 
 
 def write_report(run_dir: Path, content: str) -> Path:
-    p = run_dir / 'atk_report.md'
+    p = run_dir / "atk_report.md"
     save_text(p, content)
     return p

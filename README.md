@@ -1,66 +1,91 @@
 # ATK (AutoTune-Kit)
 
-ATK 是一个单卡微调与评测工具集，目标是把「安全起跑 + 快速训练 + 统一评测」做成可复现的 CLI 流程。
+ATK 是单卡微调与评测工具集，目标是把「Safe Launch + 快速训练 + 统一评测」做成可复现 CLI 流程。
 
-## 一键复现：Unsloth 微调 + vLLM 全链路评测
+## 快速上手
 
-适用场景：新开一台 GPU 机器后，希望一条命令复现你这次已经跑通的流程。
+### 方式 A：GitHub 直接安装（推荐）
+
+```bash
+pip install git+https://github.com/weiweijiuzaizhe/autotune-kit.git
+atk run --config examples/atk.yaml
+```
+
+### 方式 B：开发者模式
 
 ```bash
 git clone https://github.com/weiweijiuzaizhe/autotune-kit.git
 cd autotune-kit
+pip install -e .
+```
+
+## 运行模式
+
+### 3 分钟冒烟（默认 quick）
+
+```bash
+atk run
+# 等价于：atk run --config examples/atk.yaml
+```
+
+默认 `examples/atk.yaml` 指向 quick 配置（小样本 + 少步数），并在微调后自动执行 `quick_eval`：
+- 默认后端 `vllm`（失败自动回退到 HF batch）
+- 输出 base vs tuned 四维对比：推理/格式/幻觉/安全
+
+### 全量闭环（full）
+
+```bash
+atk run --config examples/atk.full.yaml
+```
+
+`full` 配置会启用 `safe_launch` 与 `sanity`，用于更稳健的训练后体检与对比。
+
+## 配置文件说明
+
+- `examples/atk.yaml`: 默认 quick（建议新机器先跑）
+- `examples/atk.quick.yaml`: quick 显式配置（训练后自动 quick_eval）
+- `examples/atk.full.yaml`: full 配置（safe_launch + full sanity，更完整更耗时）
+
+## 一键复现脚本（Unsloth + vLLM 四维评测）
+
+```bash
 bash scripts/repro_unsloth_vllm_full.sh
 ```
 
-该命令默认会执行：
-1. `bootstrap` 两个 conda 环境（训练 env + vLLM 评测 env）
+该脚本会执行：
+1. bootstrap 两个 conda 环境（训练 env + vLLM 评测 env）
 2. 自动准备训练数据（若 `./data/train.jsonl` 不存在）
-3. Safe Launch 预跑拦截（trial + 风险判断，不通过则直接退出）
-4. 用 `LLaMA-Factory + Unsloth + QLoRA 4bit` 做一次 SFT 微调
-5. 合并 LoRA adapter 为完整模型目录（给 vLLM 加载）
-6. 跑 vLLM 全链路评测（推理/格式/幻觉/安全，含 fp16 与 bnb4）
-7. 生成统一四维报告表
+3. Safe Launch 预跑拦截（trial + 风险判断）
+4. `LLaMA-Factory + Unsloth + QLoRA 4bit` 训练
+5. 合并 LoRA adapter 为完整模型目录（供 vLLM）
+6. vLLM 四维评测（推理/格式/幻觉/安全，含 fp16 与 bnb4）
+7. 生成统一报告
 
-运行结束后会打印 `run_dir`，默认在：
+默认输出目录：
 - `./artifacts/repro_runs/repro_<timestamp>/`
 
-核心产物：
-- `safe_launch.json`
-- `safe_launch/lf_train.safe.log`
-- `lf_train.log`
-- `merged_model/`
-- `evals/eval_run_*_lf_aligned/summary.json`
-- `evals/format_run_*/summary.json`
-- `evals/factual_safety_run_*/summary.json`
-- `four_dim/four_dim_table.md`
+## 评测子集 limit 默认值
 
-## 可调参数
+以下参数由统一配置文件管理（保证跨模型口径一致）：
+- `LIMIT_MMLU`
+- `LIMIT_PER_SUBJECT`
+- `CEVAL_SUBJECT_LIMIT`
+- `CMMLU_SUBJECT_LIMIT`
 
-```bash
-# 示例：跳过 bootstrap 和 safe launch，指定训练步数与数据路径
-bash scripts/repro_unsloth_vllm_full.sh \
-  --skip-bootstrap \
-  --skip-safe-launch \
-  --max-steps 200 \
-  --train-jsonl ./data/train.jsonl
-```
+配置文件：
+- `configs/eval_limits.conf`
 
-环境变量可覆盖：
-- `TRAIN_ENV`（默认 `py310`）
-- `SCORE_ENV`（默认 `vllm014`）
-- `BASE_MODEL`（默认 `Qwen/Qwen2.5-7B-Instruct`）
-- `RUN_ROOT`（默认 `./artifacts/repro_runs`）
-- `MAX_STEPS`、`CUTOFF_LEN`、`MICRO_BATCH`、`GRAD_ACC`
-- `LIMIT_MMLU`、`LIMIT_PER_SUBJECT`、`CEVAL_SUBJECT_LIMIT`、`CMMLU_SUBJECT_LIMIT`
-- `TRUTHFUL_LIMIT`、`JBB_HARMFUL_LIMIT`、`JBB_BENIGN_LIMIT`
+可在该文件修改默认值，或用环境变量临时覆盖。
 
-## 目录说明
+## 目录结构
 
 ```text
 .
 ├── atk/                              # ATK CLI 核心逻辑
 ├── assets/lf_eval_tasks/             # LF 对齐评测映射（mmlu/ceval/cmmlu）
-├── examples/                         # 最小配置示例
+├── configs/                          # 评测默认参数配置
+├── data/                             # 训练样本（含 quick 小样本）
+├── examples/                         # quick/full 示例配置
 ├── scripts/
 │   ├── bootstrap_repro_envs.sh       # 新机器依赖与缓存初始化
 │   ├── generate_demo_train_jsonl.py  # 生成 200+3 样本训练集
@@ -70,14 +95,7 @@ bash scripts/repro_unsloth_vllm_full.sh \
 └── tools/vllm_routeA/                # vLLM 评测与四维报告工具
 ```
 
-## 仍可单独使用 ATK CLI
-
-```bash
-pip install -e .
-atk run --config examples/atk.yaml
-```
-
 ## 备注
 
-- 仓库内脚本已去除 `/root/...` 硬编码，默认使用仓库相对路径。
+- 仓库脚本默认使用相对路径（无 `/root/...` 硬编码）。
 - HF 缓存默认使用 `~/.cache/hf`（bootstrap 会写入 `~/.bashrc`）。

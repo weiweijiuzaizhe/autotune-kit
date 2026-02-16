@@ -1,0 +1,22 @@
+# Full run config: safer and closer to publishable comparison baseline.
+model:
+  base: Qwen/Qwen2.5-7B-Instruct
+data:
+  train: ./data/train.jsonl
+output:
+  dir: ./atk_outputs/full
+train:
+  template: qwen
+  cutoff_len: 1024
+  max_steps: 200
+  micro_batch: 1
+  grad_acc: 4
+  lr: 0.0001
+  epochs: 1
+  qlora_4bit: true
+safe_launch:
+  enabled: true
+sanity:
+  enabled: true
+quick_eval:
+  enabled: false

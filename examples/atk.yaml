@@ -1,15 +1,26 @@
+# Default points to quick profile for fast verification.
 model:
   base: Qwen/Qwen2.5-7B-Instruct
 data:
-  train: ./data/train.jsonl
+  train: ./data/train.quick.jsonl
 output:
-  dir: ./atk_outputs/demo1
+  dir: ./atk_outputs/quick
 train:
   template: qwen
-  cutoff_len: 1024
-  max_steps: 50
+  cutoff_len: 512
+  max_steps: 3
   micro_batch: 1
-  grad_acc: 4
+  grad_acc: 1
   lr: 0.0001
   epochs: 1
   qlora_4bit: true
+safe_launch:
+  enabled: false
+sanity:
+  enabled: false
+quick_eval:
+  enabled: true
+  backend: vllm
+  score_env: vllm014
+  n_per_dim: 120
+  batch_size: 64

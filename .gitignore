@@ -10,6 +10,9 @@ venv/
 .vscode/
 _git_push.log
 artifacts/
-data/
 atk_runs/
+atk_outputs/
 unsloth_compiled_cache/
+
+data/*
+!data/train.quick.jsonl

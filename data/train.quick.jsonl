@@ -1,0 +1,16 @@
+{"instruction": "请输出STRICT JSON，字段为name, age, city。", "input": "姓名: Alice; 年龄: 23; 城市: Beijing", "output": "{\"name\":\"Alice\",\"age\":23,\"city\":\"Beijing\"}"}
+{"instruction": "请输出STRICT JSON，字段为name, age, city。", "input": "姓名: Bob; 年龄: 31; 城市: Shanghai", "output": "{\"name\":\"Bob\",\"age\":31,\"city\":\"Shanghai\"}"}
+{"instruction": "请输出STRICT JSON，字段为name, age, city。", "input": "姓名: Charlie; 年龄: 45; 城市: Shenzhen", "output": "{\"name\":\"Charlie\",\"age\":45,\"city\":\"Shenzhen\"}"}
+{"instruction": "请输出STRICT JSON，字段为name, age, city。", "input": "姓名: Diana; 年龄: 29; 城市: Hangzhou", "output": "{\"name\":\"Diana\",\"age\":29,\"city\":\"Hangzhou\"}"}
+{"instruction": "请输出STRICT JSON，字段为name, age, city。", "input": "姓名: Ethan; 年龄: 38; 城市: Guangzhou", "output": "{\"name\":\"Ethan\",\"age\":38,\"city\":\"Guangzhou\"}"}
+{"instruction": "请输出STRICT JSON，字段为name, age, city。", "input": "姓名: Fiona; 年龄: 22; 城市: Chengdu", "output": "{\"name\":\"Fiona\",\"age\":22,\"city\":\"Chengdu\"}"}
+{"instruction": "请输出STRICT JSON，字段为name, age, city。", "input": "姓名: Grace; 年龄: 41; 城市: Nanjing", "output": "{\"name\":\"Grace\",\"age\":41,\"city\":\"Nanjing\"}"}
+{"instruction": "请输出STRICT JSON，字段为name, age, city。", "input": "姓名: Henry; 年龄: 19; 城市: Wuhan", "output": "{\"name\":\"Henry\",\"age\":19,\"city\":\"Wuhan\"}"}
+{"instruction": "请输出STRICT JSON，字段为name, age, city。", "input": "姓名: Alice; 年龄: 23; 城市: Beijing", "output": "{\"name\":\"Alice\",\"age\":23,\"city\":\"Beijing\"}"}
+{"instruction": "请输出STRICT JSON，字段为name, age, city。", "input": "姓名: Bob; 年龄: 31; 城市: Shanghai", "output": "{\"name\":\"Bob\",\"age\":31,\"city\":\"Shanghai\"}"}
+{"instruction": "请输出STRICT JSON，字段为name, age, city。", "input": "姓名: Charlie; 年龄: 45; 城市: Shenzhen", "output": "{\"name\":\"Charlie\",\"age\":45,\"city\":\"Shenzhen\"}"}
+{"instruction": "请输出STRICT JSON，字段为name, age, city。", "input": "姓名: Diana; 年龄: 29; 城市: Hangzhou", "output": "{\"name\":\"Diana\",\"age\":29,\"city\":\"Hangzhou\"}"}
+{"instruction": "请输出STRICT JSON，字段为name, age, city。", "input": "姓名: Ethan; 年龄: 38; 城市: Guangzhou", "output": "{\"name\":\"Ethan\",\"age\":38,\"city\":\"Guangzhou\"}"}
+{"instruction": "请输出STRICT JSON，字段为name, age, city。", "input": "姓名: Fiona; 年龄: 22; 城市: Chengdu", "output": "{\"name\":\"Fiona\",\"age\":22,\"city\":\"Chengdu\"}"}
+{"instruction": "请输出STRICT JSON，字段为name, age, city。", "input": "姓名: Grace; 年龄: 41; 城市: Nanjing", "output": "{\"name\":\"Grace\",\"age\":41,\"city\":\"Nanjing\"}"}
+{"instruction": "请输出STRICT JSON，字段为name, age, city。", "input": "姓名: Henry; 年龄: 19; 城市: Wuhan", "output": "{\"name\":\"Henry\",\"age\":19,\"city\":\"Wuhan\"}"}

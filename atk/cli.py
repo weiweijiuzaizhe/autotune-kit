@@ -1,8 +1,10 @@
 import argparse
-import sys
 
 from atk.run import run_from_config_path, rerun_from_run_dir
 from atk.bootstrap import bootstrap as bootstrap_deps
+
+
+DEFAULT_CONFIG_PATH = "examples/atk.yaml"
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -10,7 +12,11 @@ def build_parser() -> argparse.ArgumentParser:
     sub = p.add_subparsers(dest="cmd", required=True)
 
     p_run = sub.add_parser("run", help="Run a new training pipeline")
-    p_run.add_argument("--config", required=True, help="Path to atk YAML config")
+    p_run.add_argument(
+        "--config",
+        default=DEFAULT_CONFIG_PATH,
+        help=f"Path to atk YAML config (default: {DEFAULT_CONFIG_PATH})",
+    )
 
     p_rerun = sub.add_parser("rerun", help="Rerun using a previous run_dir/config.effective.yaml")
     p_rerun.add_argument("run_dir", help="Path to previous run_dir")

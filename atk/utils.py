@@ -3,7 +3,6 @@ import os
 import shlex
 import subprocess
 import sys
-from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -32,11 +31,7 @@ def save_json(path: Path, obj: Any) -> None:
 
 
 def _merged_env(extra_env: Optional[Dict[str, str]] = None) -> Dict[str, str]:
-    """Ensure the current Python's bin dir is on PATH.
-
-    This makes subprocess calls (e.g. llamafactory-cli) work even when users
-    invoke /path/to/atk directly without activating a shell env.
-    """
+    """Ensure the current Python's bin dir is on PATH."""
 
     env = os.environ.copy()
     py_bin = str(Path(sys.executable).resolve().parent)
@@ -52,8 +47,9 @@ def run_subprocess(
     env: Optional[Dict[str, str]] = None,
     log_path: Optional[Path] = None,
     timeout_s: Optional[int] = None,
+    echo: bool = True,
 ) -> int:
-    """Run a subprocess and stream output to log_path (and return code)."""
+    """Run a subprocess, write logs to file, and optionally echo to console."""
 
     if log_path is not None:
         log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -77,7 +73,8 @@ def run_subprocess(
         for line in p.stdout:
             if f:
                 f.write(line)
-            else:
+                f.flush()
+            if echo:
                 print(line, end="")
         return p.wait(timeout=timeout_s)
     finally:

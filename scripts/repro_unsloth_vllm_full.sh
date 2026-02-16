@@ -7,6 +7,7 @@ cd "${ROOT_DIR}"
 TRAIN_ENV="${TRAIN_ENV:-py310}"
 SCORE_ENV="${SCORE_ENV:-vllm014}"
 BASE_MODEL="${BASE_MODEL:-Qwen/Qwen2.5-7B-Instruct}"
+EVAL_LIMITS_CONFIG="${EVAL_LIMITS_CONFIG:-${ROOT_DIR}/configs/eval_limits.conf}"
 TRAIN_JSONL="${TRAIN_JSONL:-${ROOT_DIR}/data/train.jsonl}"
 RUN_ROOT="${RUN_ROOT:-${ROOT_DIR}/artifacts/repro_runs}"
 MAX_STEPS="${MAX_STEPS:-200}"
@@ -14,15 +15,67 @@ CUTOFF_LEN="${CUTOFF_LEN:-1024}"
 MICRO_BATCH="${MICRO_BATCH:-1}"
 GRAD_ACC="${GRAD_ACC:-4}"
 QLORA_4BIT="${QLORA_4BIT:-true}"
-LIMIT_MMLU="${LIMIT_MMLU:-0}"
-LIMIT_PER_SUBJECT="${LIMIT_PER_SUBJECT:-0}"
-CEVAL_SUBJECT_LIMIT="${CEVAL_SUBJECT_LIMIT:-0}"
-CMMLU_SUBJECT_LIMIT="${CMMLU_SUBJECT_LIMIT:-0}"
+LIMIT_MMLU="${LIMIT_MMLU:-}"
+LIMIT_PER_SUBJECT="${LIMIT_PER_SUBJECT:-}"
+CEVAL_SUBJECT_LIMIT="${CEVAL_SUBJECT_LIMIT:-}"
+CMMLU_SUBJECT_LIMIT="${CMMLU_SUBJECT_LIMIT:-}"
 TRUTHFUL_LIMIT="${TRUTHFUL_LIMIT:-0}"
 JBB_HARMFUL_LIMIT="${JBB_HARMFUL_LIMIT:-0}"
 JBB_BENIGN_LIMIT="${JBB_BENIGN_LIMIT:-0}"
 SKIP_BOOTSTRAP=0
 SKIP_SAFE_LAUNCH=0
+
+resolve_eval_limits() {
+  local config_path="${EVAL_LIMITS_CONFIG}"
+  local default_mmlu=0
+  local default_per_subject=0
+  local default_ceval=0
+  local default_cmmlu=0
+  local matched=0
+  local rule
+  local pattern rmmlu rper rce rcm
+
+  if [[ -f "${config_path}" ]]; then
+    # shellcheck disable=SC1090
+    source "${config_path}"
+    default_mmlu="${DEFAULT_LIMIT_MMLU:-0}"
+    default_per_subject="${DEFAULT_LIMIT_PER_SUBJECT:-0}"
+    default_ceval="${DEFAULT_CEVAL_SUBJECT_LIMIT:-0}"
+    default_cmmlu="${DEFAULT_CMMLU_SUBJECT_LIMIT:-0}"
+
+    if declare -p MODEL_LIMIT_RULES >/dev/null 2>&1; then
+      for rule in "${MODEL_LIMIT_RULES[@]}"; do
+        IFS='|' read -r pattern rmmlu rper rce rcm <<< "${rule}"
+        if [[ "${BASE_MODEL}" == ${pattern} ]]; then
+          default_mmlu="${rmmlu}"
+          default_per_subject="${rper}"
+          default_ceval="${rce}"
+          default_cmmlu="${rcm}"
+          matched=1
+          break
+        fi
+      done
+    fi
+  else
+    echo "[ATK][warn] eval limits config not found: ${config_path}; fallback to 0 (unlimited)."
+  fi
+
+  : "${LIMIT_MMLU:=${default_mmlu}}"
+  : "${LIMIT_PER_SUBJECT:=${default_per_subject}}"
+  : "${CEVAL_SUBJECT_LIMIT:=${default_ceval}}"
+  : "${CMMLU_SUBJECT_LIMIT:=${default_cmmlu}}"
+
+  if [[ -f "${config_path}" ]]; then
+    if [[ ${matched} -eq 1 ]]; then
+      echo "[ATK] eval profile: matched model rule for ${BASE_MODEL}"
+    else
+      echo "[ATK] eval profile: using default rule for ${BASE_MODEL}"
+    fi
+  fi
+
+  echo "[ATK] eval limits config: ${config_path}"
+  echo "[ATK] eval limits effective: LIMIT_MMLU=${LIMIT_MMLU}, LIMIT_PER_SUBJECT=${LIMIT_PER_SUBJECT}, CEVAL_SUBJECT_LIMIT=${CEVAL_SUBJECT_LIMIT}, CMMLU_SUBJECT_LIMIT=${CMMLU_SUBJECT_LIMIT}"
+}
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -63,6 +116,7 @@ step() {
 
 echo "[ATK] run_dir=${RUN_DIR}"
 echo "[ATK] settings: TRAIN_ENV=${TRAIN_ENV}, SCORE_ENV=${SCORE_ENV}, BASE_MODEL=${BASE_MODEL}"
+resolve_eval_limits
 
 TOTAL=10
 
@@ -175,7 +229,7 @@ step 10 ${TOTAL} "generate unified 4D report"
 
 FOUR_DIM_MD="${RUN_DIR}/four_dim/four_dim_table.md"
 
-cat > "${RUN_DIR}/README_RUN.md" <<EOF
+cat > "${RUN_DIR}/README_RUN.md" <<RUN_EOF
 # ATK Repro Run
 
 - run_dir: ${RUN_DIR}
@@ -183,6 +237,11 @@ cat > "${RUN_DIR}/README_RUN.md" <<EOF
 - train_jsonl: ${TRAIN_JSONL}
 - train_env: ${TRAIN_ENV}
 - score_env: ${SCORE_ENV}
+- eval_limits_config: ${EVAL_LIMITS_CONFIG}
+- limit_mmlu: ${LIMIT_MMLU}
+- limit_per_subject: ${LIMIT_PER_SUBJECT}
+- ceval_subject_limit: ${CEVAL_SUBJECT_LIMIT}
+- cmmlu_subject_limit: ${CMMLU_SUBJECT_LIMIT}
 - safe_launch: ${RUN_DIR}/safe_launch.json
 - lora_output: ${RUN_DIR}/output_lora
 - merged_model: ${RUN_DIR}/merged_model
@@ -190,7 +249,7 @@ cat > "${RUN_DIR}/README_RUN.md" <<EOF
 - format_summary: ${FORMAT_SUMMARY}
 - factual_safety_summary: ${FACTUAL_SUMMARY}
 - four_dim_table: ${FOUR_DIM_MD}
-EOF
+RUN_EOF
 
 echo ""
 echo "[ATK] DONE"

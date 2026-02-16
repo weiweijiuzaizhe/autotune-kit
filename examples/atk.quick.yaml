@@ -1,0 +1,27 @@
+# Quick mode (default): about 3-minute post-train quick check on a single 24GB GPU.
+# n_per_dim=120 => each of 4 dimensions has >=100 samples.
+model:
+  base: Qwen/Qwen2.5-7B-Instruct
+data:
+  train: ./data/train.quick.jsonl
+output:
+  dir: ./atk_outputs/quick
+train:
+  template: qwen
+  cutoff_len: 512
+  max_steps: 3
+  micro_batch: 1
+  grad_acc: 1
+  lr: 0.0001
+  epochs: 1
+  qlora_4bit: true
+safe_launch:
+  enabled: false
+sanity:
+  enabled: false
+quick_eval:
+  enabled: true
+  backend: vllm       # vllm | hf
+  score_env: vllm014  # conda env for vLLM evaluator script
+  n_per_dim: 120      # per-dimension sample count (reasoning/format/hallucination/safety)
+  batch_size: 64      # HF fallback batch size; vLLM uses max_num_seqs>=32
