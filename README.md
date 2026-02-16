@@ -15,15 +15,18 @@ bash scripts/repro_unsloth_vllm_full.sh
 该命令默认会执行：
 1. `bootstrap` 两个 conda 环境（训练 env + vLLM 评测 env）
 2. 自动准备训练数据（若 `./data/train.jsonl` 不存在）
-3. 用 `LLaMA-Factory + Unsloth + QLoRA 4bit` 做一次 SFT 微调
-4. 合并 LoRA adapter 为完整模型目录（给 vLLM 加载）
-5. 跑 vLLM 全链路评测（推理/格式/幻觉/安全，含 fp16 与 bnb4）
-6. 生成统一四维报告表
+3. Safe Launch 预跑拦截（trial + 风险判断，不通过则直接退出）
+4. 用 `LLaMA-Factory + Unsloth + QLoRA 4bit` 做一次 SFT 微调
+5. 合并 LoRA adapter 为完整模型目录（给 vLLM 加载）
+6. 跑 vLLM 全链路评测（推理/格式/幻觉/安全，含 fp16 与 bnb4）
+7. 生成统一四维报告表
 
 运行结束后会打印 `run_dir`，默认在：
 - `./artifacts/repro_runs/repro_<timestamp>/`
 
 核心产物：
+- `safe_launch.json`
+- `safe_launch/lf_train.safe.log`
 - `lf_train.log`
 - `merged_model/`
 - `evals/eval_run_*_lf_aligned/summary.json`
@@ -34,9 +37,10 @@ bash scripts/repro_unsloth_vllm_full.sh
 ## 可调参数
 
 ```bash
-# 示例：跳过 bootstrap，指定训练步数与数据路径
+# 示例：跳过 bootstrap 和 safe launch，指定训练步数与数据路径
 bash scripts/repro_unsloth_vllm_full.sh \
   --skip-bootstrap \
+  --skip-safe-launch \
   --max-steps 200 \
   --train-jsonl ./data/train.jsonl
 ```
@@ -60,6 +64,8 @@ bash scripts/repro_unsloth_vllm_full.sh \
 ├── scripts/
 │   ├── bootstrap_repro_envs.sh       # 新机器依赖与缓存初始化
 │   ├── generate_demo_train_jsonl.py  # 生成 200+3 样本训练集
+│   ├── prepare_lf_dataset_info.py    # 自动生成 dataset_info.json
+│   ├── run_safe_launch_gate.py       # Safe Launch 预跑与拦截
 │   └── repro_unsloth_vllm_full.sh    # 一键全链路复现入口
 └── tools/vllm_routeA/                # vLLM 评测与四维报告工具
 ```

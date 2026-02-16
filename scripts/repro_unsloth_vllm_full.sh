@@ -13,6 +13,7 @@ MAX_STEPS="${MAX_STEPS:-200}"
 CUTOFF_LEN="${CUTOFF_LEN:-1024}"
 MICRO_BATCH="${MICRO_BATCH:-1}"
 GRAD_ACC="${GRAD_ACC:-4}"
+QLORA_4BIT="${QLORA_4BIT:-true}"
 LIMIT_MMLU="${LIMIT_MMLU:-0}"
 LIMIT_PER_SUBJECT="${LIMIT_PER_SUBJECT:-0}"
 CEVAL_SUBJECT_LIMIT="${CEVAL_SUBJECT_LIMIT:-0}"
@@ -21,10 +22,12 @@ TRUTHFUL_LIMIT="${TRUTHFUL_LIMIT:-0}"
 JBB_HARMFUL_LIMIT="${JBB_HARMFUL_LIMIT:-0}"
 JBB_BENIGN_LIMIT="${JBB_BENIGN_LIMIT:-0}"
 SKIP_BOOTSTRAP=0
+SKIP_SAFE_LAUNCH=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --skip-bootstrap) SKIP_BOOTSTRAP=1; shift ;;
+    --skip-safe-launch) SKIP_SAFE_LAUNCH=1; shift ;;
     --train-jsonl) TRAIN_JSONL="$2"; shift 2 ;;
     --max-steps) MAX_STEPS="$2"; shift 2 ;;
     --base-model) BASE_MODEL="$2"; shift 2 ;;
@@ -59,10 +62,9 @@ step() {
 }
 
 echo "[ATK] run_dir=${RUN_DIR}"
-
 echo "[ATK] settings: TRAIN_ENV=${TRAIN_ENV}, SCORE_ENV=${SCORE_ENV}, BASE_MODEL=${BASE_MODEL}"
 
-TOTAL=9
+TOTAL=10
 
 if [[ ${SKIP_BOOTSTRAP} -eq 0 ]]; then
   step 1 ${TOTAL} "bootstrap envs + cache warmup"
@@ -80,7 +82,28 @@ else
 fi
 "${CONDA_BIN}" run -n "${TRAIN_ENV}" python "${ROOT_DIR}/scripts/prepare_lf_dataset_info.py" --train_jsonl "${TRAIN_JSONL}"
 
-step 3 ${TOTAL} "build unsloth train yaml"
+if [[ ${SKIP_SAFE_LAUNCH} -eq 0 ]]; then
+  step 3 ${TOTAL} "safe launch gate (trial + risk intercept)"
+  set +e
+  "${CONDA_BIN}" run -n "${TRAIN_ENV}" python "${ROOT_DIR}/scripts/run_safe_launch_gate.py" \
+    --run_dir "${RUN_DIR}" \
+    --model_base "${BASE_MODEL}" \
+    --train_jsonl "${TRAIN_JSONL}" \
+    --base_train_yaml "${ROOT_DIR}/atk/templates/lf_train_template.yaml" \
+    --cutoff_len "${CUTOFF_LEN}" \
+    --micro_batch "${MICRO_BATCH}" \
+    --qlora_4bit "${QLORA_4BIT}" | tee "${RUN_DIR}/safe_launch.log"
+  SAFE_RC=${PIPESTATUS[0]}
+  set -e
+  if [[ ${SAFE_RC} -ne 0 ]]; then
+    echo "[ATK] Safe Launch blocked this run. See: ${RUN_DIR}/safe_launch.json"
+    exit 1
+  fi
+else
+  step 3 ${TOTAL} "skip safe launch (user flag)"
+fi
+
+step 4 ${TOTAL} "build unsloth train yaml"
 "${CONDA_BIN}" run -n "${TRAIN_ENV}" python "${ROOT_DIR}/scripts/build_unsloth_train_yaml.py" \
   --template_yaml "${ROOT_DIR}/atk/templates/lf_train_template.yaml" \
   --out_yaml "${RUN_DIR}/train_unsloth.yaml" \
@@ -91,16 +114,16 @@ step 3 ${TOTAL} "build unsloth train yaml"
   --micro_batch "${MICRO_BATCH}" \
   --grad_acc "${GRAD_ACC}"
 
-step 4 ${TOTAL} "run unsloth finetuning"
+step 5 ${TOTAL} "run unsloth finetuning"
 "${CONDA_BIN}" run -n "${TRAIN_ENV}" llamafactory-cli train "${RUN_DIR}/train_unsloth.yaml" | tee "${RUN_DIR}/lf_train.log"
 
-step 5 ${TOTAL} "merge LoRA adapter -> full model"
+step 6 ${TOTAL} "merge LoRA adapter -> full model"
 "${CONDA_BIN}" run -n "${TRAIN_ENV}" python "${ROOT_DIR}/tools/vllm_routeA/merge_lora_to_full.py" \
   --base "${BASE_MODEL}" \
   --adapter "${RUN_DIR}/output_lora" \
   --out "${RUN_DIR}/merged_model" | tee "${RUN_DIR}/merge.log"
 
-step 6 ${TOTAL} "run LF-aligned reasoning eval (vLLM, fp16+bnb4)"
+step 7 ${TOTAL} "run LF-aligned reasoning eval (vLLM, fp16+bnb4)"
 "${CONDA_BIN}" run -n "${TRAIN_ENV}" python "${ROOT_DIR}/tools/vllm_routeA/run_base_vs_tuned_lf_aligned.py" \
   --base "${BASE_MODEL}" \
   --tuned "${RUN_DIR}/merged_model" \
@@ -116,7 +139,7 @@ step 6 ${TOTAL} "run LF-aligned reasoning eval (vLLM, fp16+bnb4)"
 
 REASONING_SUMMARY="$(ls -td "${RUN_DIR}"/evals/eval_run_*_lf_aligned 2>/dev/null | head -n 1)/summary.json"
 
-step 7 ${TOTAL} "run format eval (vLLM, fp16+bnb4)"
+step 8 ${TOTAL} "run format eval (vLLM, fp16+bnb4)"
 "${CONDA_BIN}" run -n "${TRAIN_ENV}" python "${ROOT_DIR}/tools/vllm_routeA/run_base_vs_tuned_format_vllm.py" \
   --base "${BASE_MODEL}" \
   --tuned "${RUN_DIR}/merged_model" \
@@ -127,7 +150,7 @@ step 7 ${TOTAL} "run format eval (vLLM, fp16+bnb4)"
 
 FORMAT_SUMMARY="$(ls -td "${RUN_DIR}"/evals/format_run_* 2>/dev/null | head -n 1)/summary.json"
 
-step 8 ${TOTAL} "run factual + safety eval (vLLM, fp16+bnb4)"
+step 9 ${TOTAL} "run factual + safety eval (vLLM, fp16+bnb4)"
 "${CONDA_BIN}" run -n "${TRAIN_ENV}" python "${ROOT_DIR}/tools/vllm_routeA/run_base_vs_tuned_factual_safety.py" \
   --base "${BASE_MODEL}" \
   --tuned "${RUN_DIR}/merged_model" \
@@ -142,7 +165,7 @@ step 8 ${TOTAL} "run factual + safety eval (vLLM, fp16+bnb4)"
 
 FACTUAL_SUMMARY="$(ls -td "${RUN_DIR}"/evals/factual_safety_run_* 2>/dev/null | head -n 1)/summary.json"
 
-step 9 ${TOTAL} "generate unified 4D report"
+step 10 ${TOTAL} "generate unified 4D report"
 "${CONDA_BIN}" run -n "${TRAIN_ENV}" python "${ROOT_DIR}/tools/vllm_routeA/generate_four_dim_report.py" \
   --reasoning_summary "${REASONING_SUMMARY}" \
   --factual_safety_summary "${FACTUAL_SUMMARY}" \
@@ -160,6 +183,7 @@ cat > "${RUN_DIR}/README_RUN.md" <<EOF
 - train_jsonl: ${TRAIN_JSONL}
 - train_env: ${TRAIN_ENV}
 - score_env: ${SCORE_ENV}
+- safe_launch: ${RUN_DIR}/safe_launch.json
 - lora_output: ${RUN_DIR}/output_lora
 - merged_model: ${RUN_DIR}/merged_model
 - reasoning_summary: ${REASONING_SUMMARY}
